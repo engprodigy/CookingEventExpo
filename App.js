@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Platform,
   Alert,
-  ScrollView,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import EventsList from './components/EventsList';
@@ -20,7 +19,7 @@ export default function App() {
   const [show, setShow] = useState(false);
   const [mode, setMode] = useState('date');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState('events'); // 'events' or 'notifications'
+  const [activeTab, setActiveTab] = useState('events');
 
   const onChange = (event, selectedDate) => {
     setShow(Platform.OS === 'ios');
@@ -110,6 +109,56 @@ export default function App() {
     }
   };
 
+  const renderEventsTab = () => (
+    <View style={styles.eventsContainer}>
+      {/* Fixed Event Form Section */}
+      <View style={styles.formSection}>
+        <Text style={styles.header}>Create New Event</Text>
+        
+        <View style={styles.formContainer}>
+          <Text style={styles.label}>Event Title</Text>
+          <TextInput
+            style={styles.input}
+            value={title}
+            onChangeText={setTitle}
+            placeholder="Enter event title"
+            placeholderTextColor="#666"
+          />
+
+          <Text style={styles.label}>Event Date & Time</Text>
+          <View style={styles.dateTimeContainer}>
+            <TouchableOpacity style={styles.dateButton} onPress={showDatepicker}>
+              <Text style={styles.dateButtonText}>
+                {date.toLocaleDateString()}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.timeButton} onPress={showTimepicker}>
+              <Text style={styles.dateButtonText}>
+                {date.toLocaleTimeString()}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity 
+            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+          >
+            <Text style={styles.submitButtonText}>
+              {isSubmitting ? 'Creating Event...' : 'Create Event'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Events List Section */}
+      <View style={styles.eventsListContainer}>
+        <Text style={styles.sectionHeader}>Upcoming Events</Text>
+        <EventsList />
+      </View>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       {/* Tab Navigation */}
@@ -132,57 +181,7 @@ export default function App() {
         </TouchableOpacity>
       </View>
 
-      {activeTab === 'events' ? (
-        <ScrollView style={styles.scrollView}>
-          {/* Fixed Event Form Section */}
-          <View style={styles.formSection}>
-            <Text style={styles.header}>Create New Event</Text>
-            
-            <View style={styles.formContainer}>
-              <Text style={styles.label}>Event Title</Text>
-              <TextInput
-                style={styles.input}
-                value={title}
-                onChangeText={setTitle}
-                placeholder="Enter event title"
-                placeholderTextColor="#666"
-              />
-
-              <Text style={styles.label}>Event Date & Time</Text>
-              <View style={styles.dateTimeContainer}>
-                <TouchableOpacity style={styles.dateButton} onPress={showDatepicker}>
-                  <Text style={styles.dateButtonText}>
-                    {date.toLocaleDateString()}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.timeButton} onPress={showTimepicker}>
-                  <Text style={styles.dateButtonText}>
-                    {date.toLocaleTimeString()}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <TouchableOpacity 
-                style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
-                onPress={handleSubmit}
-                disabled={isSubmitting}
-              >
-                <Text style={styles.submitButtonText}>
-                  {isSubmitting ? 'Creating Event...' : 'Create Event'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Events List Section */}
-          <View style={styles.eventsListContainer}>
-            <Text style={styles.sectionHeader}>Upcoming Events</Text>
-            <EventsList />
-          </View>
-        </ScrollView>
-      ) : (
-        <NotificationFeed />
-      )}
+      {activeTab === 'events' ? renderEventsTab() : <NotificationFeed />}
 
       {show && (
         <DateTimePicker
@@ -203,8 +202,34 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  formSection: {
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'white',
     paddingTop: 60,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#007AFF',
+  },
+  tabText: {
+    fontSize: 16,
+    color: '#666',
+  },
+  activeTabText: {
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  eventsContainer: {
+    flex: 1,
+  },
+  formSection: {
     backgroundColor: '#f5f5f5',
   },
   header: {
@@ -297,32 +322,5 @@ const styles = StyleSheet.create({
     color: '#333',
     marginLeft: 20,
     marginBottom: 10,
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    paddingTop: 60,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 15,
-    alignItems: 'center',
-  },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#007AFF',
-  },
-  tabText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  activeTabText: {
-    color: '#007AFF',
-    fontWeight: '600',
-  },
-  scrollView: {
-    flex: 1,
   },
 });
