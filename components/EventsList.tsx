@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
 import { API_URL } from '../config';
+import { useTheme, themes } from './ThemeContext';
 
 interface Event {
   id: string;
@@ -19,7 +20,13 @@ interface Event {
   eventTime: string;
 }
 
-const EventsList: React.FC = () => {
+interface EventsListProps {
+  refreshTrigger: number;
+}
+
+const EventsList: React.FC<EventsListProps> = ({ refreshTrigger }) => {
+  const { theme } = useTheme();
+  const currentTheme = themes[theme];
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -28,7 +35,7 @@ const EventsList: React.FC = () => {
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+  }, [refreshTrigger]);
 
   const fetchEvents = async () => {
     try {
@@ -110,12 +117,12 @@ const EventsList: React.FC = () => {
   const renderItem = ({ item }: { item: Event }) => (
     <Swipeable renderRightActions={() => renderRightActions(item.id)}>
       <TouchableOpacity
-        style={styles.eventItem}
+        style={[styles.eventItem, { backgroundColor: currentTheme.surface }]}
         onPress={() => showEventDetails(item)}
       >
         <View style={styles.eventContent}>
-          <Text style={styles.eventName}>{item.title}</Text>
-          <Text style={styles.eventDateTime}>
+          <Text style={[styles.eventName, { color: currentTheme.text }]}>{item.title}</Text>
+          <Text style={[styles.eventDateTime, { color: currentTheme.textSecondary }]}>
             {new Date(item.eventTime).toLocaleString()}
           </Text>
         </View>
@@ -125,17 +132,20 @@ const EventsList: React.FC = () => {
 
   if (isLoading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={[styles.centered, { backgroundColor: currentTheme.background }]}>
+        <ActivityIndicator size="large" color={currentTheme.primary} />
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.errorText}>Error: {error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={fetchEvents}>
+      <View style={[styles.centered, { backgroundColor: currentTheme.background }]}>
+        <Text style={[styles.errorText, { color: currentTheme.error }]}>Error: {error}</Text>
+        <TouchableOpacity 
+          style={[styles.retryButton, { backgroundColor: currentTheme.primary }]} 
+          onPress={fetchEvents}
+        >
           <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
       </View>
@@ -143,7 +153,7 @@ const EventsList: React.FC = () => {
   }
 
   return (
-    <GestureHandlerRootView style={styles.container}>
+    <GestureHandlerRootView style={[styles.container, { backgroundColor: currentTheme.background }]}>
       <FlatList
         data={events.sort((a, b) => new Date(a.eventTime).getTime() - new Date(b.eventTime).getTime())}
         renderItem={renderItem}
@@ -158,22 +168,22 @@ const EventsList: React.FC = () => {
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: currentTheme.surface }]}>
             {selectedEvent && (
               <>
-                <Text style={styles.modalTitle}>{selectedEvent.title}</Text>
-                <Text style={styles.modalDateTime}>
+                <Text style={[styles.modalTitle, { color: currentTheme.text }]}>{selectedEvent.title}</Text>
+                <Text style={[styles.modalDateTime, { color: currentTheme.textSecondary }]}>
                   {new Date(selectedEvent.eventTime).toLocaleString()}
                 </Text>
                 <View style={styles.modalButtons}>
                   <TouchableOpacity
-                    style={[styles.modalButton, styles.deleteButton]}
+                    style={[styles.modalButton, { backgroundColor: currentTheme.error }]}
                     onPress={() => handleDeletePress(selectedEvent)}
                   >
                     <Text style={styles.deleteButtonText}>Delete Event</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.modalButton, styles.closeButton]}
+                    style={[styles.modalButton, { backgroundColor: currentTheme.primary }]}
                     onPress={() => setModalVisible(false)}
                   >
                     <Text style={styles.closeButtonText}>Close</Text>

@@ -11,15 +11,20 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import EventsList from './components/EventsList';
 import NotificationFeed from './components/NotificationFeed';
+import ThemeToggle from './components/ThemeToggle';
+import { ThemeProvider, useTheme, themes } from './components/ThemeContext';
 import { API_URL } from './config';
 
-export default function App() {
+const AppContent = () => {
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(new Date());
   const [show, setShow] = useState(false);
   const [mode, setMode] = useState('date');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('events');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const { theme, isDark } = useTheme();
+  const currentTheme = themes[theme];
 
   const onChange = (event, selectedDate) => {
     setShow(Platform.OS === 'ios');
@@ -93,6 +98,9 @@ export default function App() {
       setTitle('');
       setDate(new Date());
       
+      // Trigger refresh of EventsList
+      setRefreshTrigger(prev => prev + 1);
+      
     } catch (error) {
       console.error('Detailed error:', error);
       Alert.alert(
@@ -110,37 +118,57 @@ export default function App() {
   };
 
   const renderEventsTab = () => (
-    <View style={styles.eventsContainer}>
+    <View style={[styles.eventsContainer, { backgroundColor: currentTheme.background }]}>
       {/* Fixed Event Form Section */}
-      <View style={styles.formSection}>
-        <Text style={styles.header}>Create New Event</Text>
+      <View style={[styles.formSection, { backgroundColor: currentTheme.background }]}>
+        <Text style={[styles.header, { color: currentTheme.text }]}>Create New Event</Text>
         
-        <View style={styles.formContainer}>
-          <Text style={styles.label}>Event Title</Text>
+        <View style={[styles.formContainer, { backgroundColor: currentTheme.surface }]}>
+          <Text style={[styles.label, { color: currentTheme.text }]}>Event Title</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { 
+              backgroundColor: currentTheme.surface,
+              color: currentTheme.text,
+              borderColor: currentTheme.border
+            }]}
             value={title}
             onChangeText={setTitle}
             placeholder="Enter event title"
-            placeholderTextColor="#666"
+            placeholderTextColor={currentTheme.textSecondary}
           />
 
-          <Text style={styles.label}>Event Date & Time</Text>
+          <Text style={[styles.label, { color: currentTheme.text }]}>Event Date & Time</Text>
           <View style={styles.dateTimeContainer}>
-            <TouchableOpacity style={styles.dateButton} onPress={showDatepicker}>
-              <Text style={styles.dateButtonText}>
+            <TouchableOpacity 
+              style={[styles.dateButton, { 
+                backgroundColor: currentTheme.surface,
+                borderColor: currentTheme.border
+              }]} 
+              onPress={showDatepicker}
+            >
+              <Text style={[styles.dateButtonText, { color: currentTheme.text }]}>
                 {date.toLocaleDateString()}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.timeButton} onPress={showTimepicker}>
-              <Text style={styles.dateButtonText}>
+            <TouchableOpacity 
+              style={[styles.timeButton, { 
+                backgroundColor: currentTheme.surface,
+                borderColor: currentTheme.border
+              }]} 
+              onPress={showTimepicker}
+            >
+              <Text style={[styles.dateButtonText, { color: currentTheme.text }]}>
                 {date.toLocaleTimeString()}
               </Text>
             </TouchableOpacity>
           </View>
 
           <TouchableOpacity 
-            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+            style={[
+              styles.submitButton, 
+              isSubmitting && styles.submitButtonDisabled,
+              { backgroundColor: currentTheme.primary }
+            ]}
             onPress={handleSubmit}
             disabled={isSubmitting}
           >
@@ -153,21 +181,28 @@ export default function App() {
 
       {/* Events List Section */}
       <View style={styles.eventsListContainer}>
-        <Text style={styles.sectionHeader}>Upcoming Events</Text>
-        <EventsList />
+        <Text style={[styles.sectionHeader, { color: currentTheme.text }]}>Upcoming Events</Text>
+        <EventsList refreshTrigger={refreshTrigger} />
       </View>
     </View>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: currentTheme.background }]}>
       {/* Tab Navigation */}
-      <View style={styles.tabContainer}>
+      <View style={[styles.tabContainer, { 
+        backgroundColor: currentTheme.tabBar,
+        borderBottomColor: currentTheme.tabBarBorder
+      }]}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'events' && styles.activeTab]}
           onPress={() => setActiveTab('events')}
         >
-          <Text style={[styles.tabText, activeTab === 'events' && styles.activeTabText]}>
+          <Text style={[
+            styles.tabText, 
+            { color: currentTheme.textSecondary },
+            activeTab === 'events' && { color: currentTheme.primary }
+          ]}>
             Events
           </Text>
         </TouchableOpacity>
@@ -175,10 +210,15 @@ export default function App() {
           style={[styles.tab, activeTab === 'notifications' && styles.activeTab]}
           onPress={() => setActiveTab('notifications')}
         >
-          <Text style={[styles.tabText, activeTab === 'notifications' && styles.activeTabText]}>
+          <Text style={[
+            styles.tabText, 
+            { color: currentTheme.textSecondary },
+            activeTab === 'notifications' && { color: currentTheme.primary }
+          ]}>
             Notifications
           </Text>
         </TouchableOpacity>
+        <ThemeToggle />
       </View>
 
       {activeTab === 'events' ? renderEventsTab() : <NotificationFeed />}
@@ -195,19 +235,26 @@ export default function App() {
       )}
     </View>
   );
+};
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: 'white',
     paddingTop: 60,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    alignItems: 'center',
+    paddingHorizontal: 15,
   },
   tab: {
     flex: 1,
@@ -216,15 +263,9 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: '#007AFF',
   },
   tabText: {
     fontSize: 16,
-    color: '#666',
-  },
-  activeTabText: {
-    color: '#007AFF',
-    fontWeight: '600',
   },
   eventsContainer: {
     flex: 1,

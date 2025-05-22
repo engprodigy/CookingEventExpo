@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
+import { useTheme, themes } from './ThemeContext';
 
 interface Notification {
   id: string;
@@ -54,6 +55,8 @@ const mockNotifications: Notification[] = [
 ];
 
 const NotificationFeed: React.FC = () => {
+  const { theme } = useTheme();
+  const currentTheme = themes[theme];
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -105,25 +108,38 @@ const NotificationFeed: React.FC = () => {
 
   const renderItem = ({ item }: { item: Notification }) => (
     <TouchableOpacity
-      style={[styles.notificationItem, !item.read && styles.unreadItem]}
+      style={[
+        styles.notificationItem, 
+        { backgroundColor: currentTheme.surface },
+        !item.read && { backgroundColor: currentTheme.background }
+      ]}
       onPress={() => markAsRead(item.id)}
     >
       <View style={styles.notificationHeader}>
         <Text style={styles.notificationIcon}>{getNotificationIcon(item.type)}</Text>
-        <Text style={styles.notificationTitle}>{item.title}</Text>
-        <Text style={styles.timestamp}>{formatTimestamp(item.timestamp)}</Text>
+        <Text style={[styles.notificationTitle, { color: currentTheme.text }]}>{item.title}</Text>
+        <Text style={[styles.timestamp, { color: currentTheme.textSecondary }]}>
+          {formatTimestamp(item.timestamp)}
+        </Text>
       </View>
-      <Text style={styles.notificationMessage}>{item.message}</Text>
+      <Text style={[styles.notificationMessage, { color: currentTheme.textSecondary }]}>
+        {item.message}
+      </Text>
     </TouchableOpacity>
   );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Notifications</Text>
+    <View style={[styles.container, { backgroundColor: currentTheme.background }]}>
+      <View style={[styles.header, { 
+        backgroundColor: currentTheme.surface,
+        borderBottomColor: currentTheme.border
+      }]}>
+        <Text style={[styles.headerTitle, { color: currentTheme.text }]}>Notifications</Text>
         {unreadCount > 0 && (
           <TouchableOpacity onPress={markAllAsRead}>
-            <Text style={styles.markAllRead}>Mark all as read</Text>
+            <Text style={[styles.markAllRead, { color: currentTheme.primary }]}>
+              Mark all as read
+            </Text>
           </TouchableOpacity>
         )}
       </View>
@@ -165,13 +181,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   notificationItem: {
-    backgroundColor: 'white',
     padding: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  unreadItem: {
-    backgroundColor: '#f0f7ff',
   },
   notificationHeader: {
     flexDirection: 'row',
