@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,45 +7,104 @@ import {
   TouchableOpacity,
   Modal,
   Dimensions,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
+import { API_URL } from '../config';
 
 interface Event {
   id: string;
-  name: string;
-  dateTime: Date;
+  title: string;
+  eventTime: string;
 }
 
-// Sample data
-const sampleEvents: Event[] = Array.from({ length: 20 }, (_, index) => ({
-  id: `event-${index + 1}`,
-  name: `Event ${index + 1}`,
-  dateTime: new Date(Date.now() + (index + 1) * 24 * 60 * 60 * 1000), // Each event is 1 day apart
-}));
-
 const EventsList: React.FC = () => {
-  const [events, setEvents] = useState<Event[]>(sampleEvents);
+  const [events, setEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const deleteEvent = (id: string) => {
-    setEvents(events.filter(event => event.id !== id));
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+
+  const fetchEvents = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await fetch(`${API_URL}/api/events`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setEvents(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch events');
+      console.error('Error fetching events:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const renderRightActions = (id: string) => {
-    return (
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => deleteEvent(id)}
-      >
-        <Text style={styles.deleteButtonText}>Delete</Text>
-      </TouchableOpacity>
+  const deleteEvent = async (id: string) => {
+    try {
+      const response = await fetch(`${API_URL}/api/events/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      setEvents(events.filter(event => event.id !== id));
+      setModalVisible(false);
+    } catch (err) {
+      console.error('Error deleting event:', err);
+      Alert.alert('Error', 'Failed to delete event. Please try again.');
+    }
+  };
+
+  const handleDeletePress = (event: Event) => {
+    Alert.alert(
+      'Delete Event',
+      'Are you sure you want to delete this event?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deleteEvent(event.id),
+        },
+      ],
     );
   };
 
   const showEventDetails = (event: Event) => {
     setSelectedEvent(event);
     setModalVisible(true);
+  };
+
+  const renderRightActions = (id: string) => {
+    return (
+      <TouchableOpacity
+        style={styles.swipeDeleteButton}
+        onPress={() => {
+          const event = events.find(e => e.id === id);
+          if (event) {
+            handleDeletePress(event);
+          }
+        }}
+      >
+        <Text style={styles.swipeDeleteButtonText}>Delete</Text>
+      </TouchableOpacity>
+    );
   };
 
   const renderItem = ({ item }: { item: Event }) => (
@@ -55,19 +114,38 @@ const EventsList: React.FC = () => {
         onPress={() => showEventDetails(item)}
       >
         <View style={styles.eventContent}>
-          <Text style={styles.eventName}>{item.name}</Text>
+          <Text style={styles.eventName}>{item.title}</Text>
           <Text style={styles.eventDateTime}>
-            {item.dateTime.toLocaleString()}
+            {new Date(item.eventTime).toLocaleString()}
           </Text>
         </View>
       </TouchableOpacity>
     </Swipeable>
   );
 
+  if (isLoading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.errorText}>Error: {error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchEvents}>
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <GestureHandlerRootView style={styles.container}>
       <FlatList
-        data={events.sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime())}
+        data={events.sort((a, b) => new Date(a.eventTime).getTime() - new Date(b.eventTime).getTime())}
         renderItem={renderItem}
         keyExtractor={item => item.id}
         style={styles.list}
@@ -83,18 +161,26 @@ const EventsList: React.FC = () => {
           <View style={styles.modalContent}>
             {selectedEvent && (
               <>
-                <Text style={styles.modalTitle}>{selectedEvent.name}</Text>
+                <Text style={styles.modalTitle}>{selectedEvent.title}</Text>
                 <Text style={styles.modalDateTime}>
-                  {selectedEvent.dateTime.toLocaleString()}
+                  {new Date(selectedEvent.eventTime).toLocaleString()}
                 </Text>
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.deleteButton]}
+                    onPress={() => handleDeletePress(selectedEvent)}
+                  >
+                    <Text style={styles.deleteButtonText}>Delete Event</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.closeButton]}
+                    onPress={() => setModalVisible(false)}
+                  >
+                    <Text style={styles.closeButtonText}>Close</Text>
+                  </TouchableOpacity>
+                </View>
               </>
             )}
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setModalVisible(false)}
-            >
-              <Text style={styles.closeButtonText}>Close</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -129,17 +215,6 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 5,
   },
-  deleteButton: {
-    backgroundColor: '#ff4444',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 100,
-    height: '100%',
-  },
-  deleteButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -164,16 +239,67 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 20,
   },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 20,
+    gap: 10,
+  },
+  modalButton: {
+    flex: 1,
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  deleteButton: {
+    backgroundColor: '#ff4444',
+  },
+  deleteButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   closeButton: {
     backgroundColor: '#007AFF',
-    padding: 10,
-    borderRadius: 5,
-    width: '100%',
-    alignItems: 'center',
   },
   closeButtonText: {
     color: 'white',
     fontSize: 16,
+    fontWeight: 'bold',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    color: '#ff4444',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  retryButton: {
+    backgroundColor: '#007AFF',
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  swipeDeleteButton: {
+    backgroundColor: '#ff4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 100,
+    height: '100%',
+  },
+  swipeDeleteButtonText: {
+    color: 'white',
     fontWeight: 'bold',
   },
 });

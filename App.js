@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
   Platform,
   Alert,
+  ScrollView,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import EventsList from './components/EventsList';
+import NotificationFeed from './components/NotificationFeed';
 import { API_URL } from './config';
 
 export default function App() {
@@ -18,6 +20,7 @@ export default function App() {
   const [show, setShow] = useState(false);
   const [mode, setMode] = useState('date');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState('events'); // 'events' or 'notifications'
 
   const onChange = (event, selectedDate) => {
     setShow(Platform.OS === 'ios');
@@ -109,51 +112,77 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      {/* Fixed Event Form Section */}
-      <View style={styles.formSection}>
-        <Text style={styles.header}>Create New Event</Text>
-        
-        <View style={styles.formContainer}>
-          <Text style={styles.label}>Event Title</Text>
-          <TextInput
-            style={styles.input}
-            value={title}
-            onChangeText={setTitle}
-            placeholder="Enter event title"
-            placeholderTextColor="#666"
-          />
+      {/* Tab Navigation */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'events' && styles.activeTab]}
+          onPress={() => setActiveTab('events')}
+        >
+          <Text style={[styles.tabText, activeTab === 'events' && styles.activeTabText]}>
+            Events
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'notifications' && styles.activeTab]}
+          onPress={() => setActiveTab('notifications')}
+        >
+          <Text style={[styles.tabText, activeTab === 'notifications' && styles.activeTabText]}>
+            Notifications
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-          <Text style={styles.label}>Event Date & Time</Text>
-          <View style={styles.dateTimeContainer}>
-            <TouchableOpacity style={styles.dateButton} onPress={showDatepicker}>
-              <Text style={styles.dateButtonText}>
-                {date.toLocaleDateString()}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.timeButton} onPress={showTimepicker}>
-              <Text style={styles.dateButtonText}>
-                {date.toLocaleTimeString()}
-              </Text>
-            </TouchableOpacity>
+      {activeTab === 'events' ? (
+        <ScrollView style={styles.scrollView}>
+          {/* Fixed Event Form Section */}
+          <View style={styles.formSection}>
+            <Text style={styles.header}>Create New Event</Text>
+            
+            <View style={styles.formContainer}>
+              <Text style={styles.label}>Event Title</Text>
+              <TextInput
+                style={styles.input}
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Enter event title"
+                placeholderTextColor="#666"
+              />
+
+              <Text style={styles.label}>Event Date & Time</Text>
+              <View style={styles.dateTimeContainer}>
+                <TouchableOpacity style={styles.dateButton} onPress={showDatepicker}>
+                  <Text style={styles.dateButtonText}>
+                    {date.toLocaleDateString()}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.timeButton} onPress={showTimepicker}>
+                  <Text style={styles.dateButtonText}>
+                    {date.toLocaleTimeString()}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity 
+                style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+                onPress={handleSubmit}
+                disabled={isSubmitting}
+              >
+                <Text style={styles.submitButtonText}>
+                  {isSubmitting ? 'Creating Event...' : 'Create Event'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
-          <TouchableOpacity 
-            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={isSubmitting}
-          >
-            <Text style={styles.submitButtonText}>
-              {isSubmitting ? 'Creating Event...' : 'Create Event'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Events List Section */}
-      <View style={styles.eventsListContainer}>
-        <Text style={styles.sectionHeader}>Upcoming Events</Text>
-        <EventsList />
-      </View>
+          {/* Events List Section */}
+          <View style={styles.eventsListContainer}>
+            <Text style={styles.sectionHeader}>Upcoming Events</Text>
+            <EventsList />
+          </View>
+        </ScrollView>
+      ) : (
+        <NotificationFeed />
+      )}
 
       {show && (
         <DateTimePicker
@@ -268,5 +297,32 @@ const styles = StyleSheet.create({
     color: '#333',
     marginLeft: 20,
     marginBottom: 10,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'white',
+    paddingTop: 60,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#007AFF',
+  },
+  tabText: {
+    fontSize: 16,
+    color: '#666',
+  },
+  activeTabText: {
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  scrollView: {
+    flex: 1,
   },
 });
