@@ -1,0 +1,22 @@
+{
+  "dependencies": {
+    "@expo/webpack-config": "^19.0.1",
+    "@react-native-community/datetimepicker": "^8.3.0",
+    "expo": "^53.0.9",
+    "react": "^19.0.0",
+    "react-dom": "^19.1.0",
+    "react-native": "^0.79.2",
+    "react-native-dotenv": "^3.4.11",
+    "react-native-gesture-handler": "^2.25.0",
+    "react-native-reanimated": "^3.17.5",
+    "react-native-web": "^0.20.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.0.10",
+    "metro": "^0.82.3",
+    "metro-core": "^0.82.3",
+    "metro-runtime": "^0.82.3",
+    "metro-source-map": "^0.82.3",
+    "typescript": "~5.8.3"
+  }
+}
