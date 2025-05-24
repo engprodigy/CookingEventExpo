@@ -1,22 +1,30 @@
 {
   "dependencies": {
-    "@expo/webpack-config": "^19.0.1",
-    "@react-native-community/datetimepicker": "^8.3.0",
-    "expo": "^53.0.9",
-    "react": "^19.0.0",
-    "react-dom": "^19.1.0",
-    "react-native": "^0.79.2",
+    "@react-native-community/cli-platform-android": "^12.3.5",
+    "@react-native-community/datetimepicker": "8.2.0",
+    "expo": "~52.0.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-native": "0.76.9",
     "react-native-dotenv": "^3.4.11",
-    "react-native-gesture-handler": "^2.25.0",
-    "react-native-reanimated": "^3.17.5",
-    "react-native-web": "^0.20.0"
+    "react-native-gesture-handler": "~2.20.2",
+    "react-native-reanimated": "~3.16.1",
+    "react-native-web": "~0.19.6",
+    "@types/react": "~18.3.12",
+    "metro": "^0.81.0"
   },
   "devDependencies": {
-    "@types/react": "~19.0.10",
-    "metro": "^0.82.3",
+    "@react-native/gradle-plugin": "^0.79.2",
     "metro-core": "^0.82.3",
+    "metro-resolver": "^0.80.4",
     "metro-runtime": "^0.82.3",
     "metro-source-map": "^0.82.3",
-    "typescript": "~5.8.3"
+    "typescript": "~5.3.0"
+  },
+  "name": "cooking-event-expo",
+  "version": "1.0.0",
+  "scripts": {
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   }
 }

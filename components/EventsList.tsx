@@ -44,12 +44,14 @@ const EventsList: React.FC<EventsListProps> = ({ refreshTrigger }) => {
       const response = await fetch(`${API_URL}/api/events`);
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        setEvents([]);
+        return;
       }
       
       const data = await response.json();
-      setEvents(data);
+      setEvents(data || []);
     } catch (err) {
+      setEvents([]);
       setError(err instanceof Error ? err.message : 'Failed to fetch events');
       console.error('Error fetching events:', err);
     } finally {

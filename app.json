@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "7d435415-ba57-43cb-abfd-251ade26fe39"
+      }
+    },
+    "android": {
+      "package": "com.engprodigy.cookingeventexpo"
+    }
+  }
+}
