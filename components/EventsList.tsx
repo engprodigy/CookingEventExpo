@@ -10,7 +10,8 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Swipeable } from 'react-native-gesture-handler';
 import { API_URL } from '../config';
 import { useTheme, themes } from './ThemeContext';
 
@@ -22,9 +23,10 @@ interface Event {
 
 interface EventsListProps {
   refreshTrigger: number;
+  onEditEvent: (event: Event) => void;
 }
 
-const EventsList: React.FC<EventsListProps> = ({ refreshTrigger }) => {
+const EventsList: React.FC<EventsListProps> = ({ refreshTrigger, onEditEvent }) => {
   const { theme } = useTheme();
   const currentTheme = themes[theme];
   const [events, setEvents] = useState<Event[]>([]);
@@ -93,6 +95,11 @@ const EventsList: React.FC<EventsListProps> = ({ refreshTrigger }) => {
         },
       ],
     );
+  };
+
+  const handleEditPress = (event: Event) => {
+    onEditEvent(event);
+    setModalVisible(false);
   };
 
   const showEventDetails = (event: Event) => {
@@ -186,6 +193,12 @@ const EventsList: React.FC<EventsListProps> = ({ refreshTrigger }) => {
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.modalButton, { backgroundColor: currentTheme.primary }]}
+                    onPress={() => handleEditPress(selectedEvent)}
+                  >
+                    <Text style={styles.editButtonText}>Edit Event</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: currentTheme.primary }]}
                     onPress={() => setModalVisible(false)}
                   >
                     <Text style={styles.closeButtonText}>Close</Text>
@@ -253,23 +266,33 @@ const styles = StyleSheet.create({
   },
   modalButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     width: '100%',
     marginTop: 20,
     gap: 10,
   },
   modalButton: {
     flex: 1,
-    padding: 15,
+    paddingVertical: 10,
+    paddingHorizontal: 5,
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   deleteButton: {
     backgroundColor: '#ff4444',
   },
   deleteButtonText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  editButton: {
+    backgroundColor: '#007AFF',
+  },
+  editButtonText: {
+    color: 'white',
+    fontSize: 14,
     fontWeight: 'bold',
   },
   closeButton: {
@@ -277,7 +300,7 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
   },
   centered: {

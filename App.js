@@ -23,14 +23,16 @@ const AppContent = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('events');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  // New state to track which event is being edited
+  const [editingEvent, setEditingEvent] = useState(null);
+
   const { theme, isDark } = useTheme();
   const currentTheme = themes[theme];
 
   const onChange = (event, selectedDate) => {
+    const currentDate = selectedDate || date;
     setShow(Platform.OS === 'ios');
-    if (selectedDate) {
-      setDate(selectedDate);
-    }
+    setDate(currentDate);
   };
 
   const showDatepicker = () => {
@@ -43,69 +45,59 @@ const AppContent = () => {
     setShow(true);
   };
 
+  // Function to handle receiving event data for editing
+  const handleEditEvent = (event) => {
+    setEditingEvent(event);
+    setTitle(event.title);
+    setDate(new Date(event.eventTime));
+    setActiveTab('events'); // Switch back to events tab if needed
+  };
+
   const handleSubmit = async () => {
-    if (!title.trim()) {
-      Alert.alert('Error', 'Please enter an event title');
+    if (!title) {
+      Alert.alert('Error', 'Event title cannot be empty.');
       return;
     }
 
     setIsSubmitting(true);
+    
+    // Determine if we are creating or editing
+    const method = editingEvent ? 'PATCH' : 'POST';
+    const url = editingEvent ? `${API_URL}/api/events/${editingEvent.id}` : `${API_URL}/api/events`;
+    
+    // Set the userId based on whether we are editing or creating
+    const userId = editingEvent ? editingEvent.userId : "user123";
 
     try {
-      const eventData = {
-        title: title.trim(),
-        eventTime: date.toISOString(),
-        userId: "user123"
-      };
-
-      console.log('Attempting to connect to:', `${API_URL}/api/events`);
-      console.log('Request data:', JSON.stringify(eventData, null, 2));
-
-      // First, try to check if the server is reachable
-      try {
-        const testResponse = await fetch(`${API_URL}/api/events`, {
-          method: 'OPTIONS',
-        });
-        console.log('Server connection test:', testResponse.status);
-      } catch (testError) {
-        console.error('Server connection test failed:', testError);
-        throw new Error('Cannot connect to server. Please make sure the API server is running.');
-      }
-
-      const response = await fetch(`${API_URL}/api/events`, {
-        method: 'POST',
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
         },
-        body: JSON.stringify(eventData),
+        body: JSON.stringify({ title, eventTime: date.toISOString(), userId }),
       });
 
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-
       if (!response.ok) {
-        const errorData = await response.text();
-        console.error('Server error response:', errorData);
-        throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        // Attempt to parse error response
+        const errorData = await response.json().catch(() => null);
+        const errorMessage = errorData?.message || `HTTP error! status: ${response.status}`;
+        throw new Error(errorMessage);
       }
 
-      const result = await response.json();
-      console.log('Server success response:', result);
-      Alert.alert('Success', 'Event created successfully!');
-      
-      // Reset form
+      // Clear the form and editing state after successful submission
       setTitle('');
       setDate(new Date());
-      
-      // Trigger refresh of EventsList
+      setEditingEvent(null);
+      // Trigger events list refresh
       setRefreshTrigger(prev => prev + 1);
-      
+
+      Alert.alert('Success', editingEvent ? 'Event updated successfully!' : 'Event created successfully!');
+
     } catch (error) {
       console.error('Detailed error:', error);
       Alert.alert(
         'Connection Error',
-        `Failed to connect to server at ${API_URL}\n\n` +
+        `Failed to ${editingEvent ? 'update' : 'create'} event.\n\n` +
         'Please check:\n' +
         '1. The API server is running\n' +
         '2. The server is listening on port 3000\n' +
@@ -121,7 +113,7 @@ const AppContent = () => {
     <View style={[styles.eventsContainer, { backgroundColor: currentTheme.background }]}>
       {/* Fixed Event Form Section */}
       <View style={[styles.formSection, { backgroundColor: currentTheme.background }]}>
-        <Text style={[styles.header, { color: currentTheme.text }]}>Create New Event</Text>
+        <Text style={[styles.header, { color: currentTheme.text }]}>{editingEvent ? 'Edit Event' : 'Create New Event'}</Text>
         
         <View style={[styles.formContainer, { backgroundColor: currentTheme.surface }]}>
           <Text style={[styles.label, { color: currentTheme.text }]}>Event Title</Text>
@@ -165,7 +157,7 @@ const AppContent = () => {
 
           <TouchableOpacity 
             style={[
-              styles.submitButton, 
+              styles.submitButton,
               isSubmitting && styles.submitButtonDisabled,
               { backgroundColor: currentTheme.primary }
             ]}
@@ -173,16 +165,32 @@ const AppContent = () => {
             disabled={isSubmitting}
           >
             <Text style={styles.submitButtonText}>
-              {isSubmitting ? 'Creating Event...' : 'Create Event'}
+              {isSubmitting ? (editingEvent ? 'Updating Event...' : 'Creating Event...') : (editingEvent ? 'Update Event' : 'Create Event')}
             </Text>
           </TouchableOpacity>
+
+          {editingEvent && (
+            <TouchableOpacity
+              style={[
+                styles.cancelButton,
+                { backgroundColor: currentTheme.error }
+              ]}
+              onPress={() => {
+                setTitle('');
+                setDate(new Date());
+                setEditingEvent(null);
+              }}
+            >
+              <Text style={styles.cancelButtonText}>Cancel Edit</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
       {/* Events List Section */}
       <View style={styles.eventsListContainer}>
         <Text style={[styles.sectionHeader, { color: currentTheme.text }]}>Upcoming Events</Text>
-        <EventsList refreshTrigger={refreshTrigger} />
+        <EventsList refreshTrigger={refreshTrigger} onEditEvent={handleEditEvent} />
       </View>
     </View>
   );
@@ -364,4 +372,16 @@ const styles = StyleSheet.create({
     marginLeft: 20,
     marginBottom: 10,
   },
+  cancelButton: {
+    height: 50,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  cancelButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  }
 });
