@@ -59,6 +59,18 @@ const AppContent = () => {
       return;
     }
 
+    // Check if the event time is at least 2 minutes from now
+    const now = new Date();
+    const twoMinutesFromNow = new Date(now.getTime() - 2 * 60 * 1000);
+    
+    if (date < twoMinutesFromNow) {
+      Alert.alert(
+        'Invalid Time',
+        'Event cannot be created in the past.'
+      );
+      return;
+    }
+
     setIsSubmitting(true);
     
     // Determine if we are creating or editing
